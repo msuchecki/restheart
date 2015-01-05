@@ -81,6 +81,8 @@ public class Configuration {
     private final String amImpl;
     private final Map<String, Object> amArgs;
 
+    private Map<String, Object> pac4j;
+
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -559,6 +561,8 @@ public class Configuration {
         logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
         logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
 
+        pac4j = getAsMap(conf, "pac4j");
+
         Level level;
 
         try {
@@ -944,5 +948,10 @@ public class Configuration {
      */
     public final List<Map<String, Object>> getStaticResourcesMounts() {
         return staticResourcesMounts;
+    }
+
+
+    public Map<String, Object> getPac4j() {
+        return pac4j;
     }
 }

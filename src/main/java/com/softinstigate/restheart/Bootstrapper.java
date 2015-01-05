@@ -18,24 +18,11 @@
 package com.softinstigate.restheart;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoException;
-import static com.softinstigate.restheart.Configuration.RESTHEART_VERSION;
-import com.softinstigate.restheart.db.PropsFixer;
 import com.softinstigate.restheart.db.MongoDBClientSingleton;
-import com.softinstigate.restheart.handlers.ErrorHandler;
-import com.softinstigate.restheart.handlers.GzipEncodingHandler;
-import com.softinstigate.restheart.handlers.PipedHttpHandler;
-import com.softinstigate.restheart.handlers.RequestDispacherHandler;
-import com.softinstigate.restheart.handlers.injectors.RequestContextInjectorHandler;
-import com.softinstigate.restheart.handlers.root.GetRootHandler;
-import com.softinstigate.restheart.handlers.collection.DeleteCollectionHandler;
-import com.softinstigate.restheart.handlers.collection.GetCollectionHandler;
-import com.softinstigate.restheart.handlers.injectors.CollectionPropsInjectorHandler;
-import com.softinstigate.restheart.handlers.injectors.DbPropsInjectorHandler;
-import com.softinstigate.restheart.handlers.injectors.LocalCachesSingleton;
-import com.softinstigate.restheart.handlers.collection.PatchCollectionHandler;
-import com.softinstigate.restheart.handlers.collection.PostCollectionHandler;
-import com.softinstigate.restheart.handlers.collection.PutCollectionHandler;
+import com.softinstigate.restheart.db.PropsFixer;
+import com.softinstigate.restheart.handlers.*;
+import com.softinstigate.restheart.handlers.applicationlogic.ApplicationLogicHandler;
+import com.softinstigate.restheart.handlers.collection.*;
 import com.softinstigate.restheart.handlers.database.DeleteDBHandler;
 import com.softinstigate.restheart.handlers.database.GetDBHandler;
 import com.softinstigate.restheart.handlers.database.PatchDBHandler;
@@ -47,55 +34,50 @@ import com.softinstigate.restheart.handlers.document.PutDocumentHandler;
 import com.softinstigate.restheart.handlers.indexes.DeleteIndexHandler;
 import com.softinstigate.restheart.handlers.indexes.GetIndexesHandler;
 import com.softinstigate.restheart.handlers.indexes.PutIndexHandler;
-import com.softinstigate.restheart.security.AccessManager;
-import com.softinstigate.restheart.utils.ResourcesExtractor;
-import com.softinstigate.restheart.utils.LoggingInitializer;
-import com.softinstigate.restheart.handlers.RequestContext;
-import com.softinstigate.restheart.handlers.applicationlogic.ApplicationLogicHandler;
-import com.softinstigate.restheart.handlers.OptionsHandler;
-import com.softinstigate.restheart.handlers.PipedWrappingHandler;
-import com.softinstigate.restheart.handlers.injectors.BodyInjectorHandler;
+import com.softinstigate.restheart.handlers.injectors.*;
 import com.softinstigate.restheart.handlers.metadata.MetadataEnforcerHandler;
-import com.softinstigate.restheart.security.handlers.SecurityHandler;
+import com.softinstigate.restheart.handlers.root.GetRootHandler;
+import com.softinstigate.restheart.security.AccessManager;
+import com.softinstigate.restheart.security.handlers.AccessManagerHandler;
 import com.softinstigate.restheart.security.handlers.CORSHandler;
-import static io.undertow.Handlers.path;
+import com.softinstigate.restheart.security.handlers.SecurityHandler;
+import com.softinstigate.restheart.utils.LoggingInitializer;
+import com.softinstigate.restheart.utils.ResourcesExtractor;
 import io.undertow.Undertow;
+import io.undertow.Undertow.Builder;
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.handlers.HttpContinueAcceptingHandler;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.*;
 import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.util.HttpString;
+import org.pac4j.core.client.Clients;
+import org.pac4j.undertow.Config;
+import org.pac4j.undertow.handlers.CallbackHandler;
+import org.pac4j.undertow.handlers.LogoutHandler;
+import org.pac4j.undertow.utils.HandlerHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-
-import static io.undertow.Handlers.resource;
-import io.undertow.Undertow.Builder;
-import io.undertow.server.handlers.AllowedMethodsHandler;
-import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.server.handlers.GracefulShutdownHandler;
-import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.RequestLimit;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.util.HttpString;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.softinstigate.restheart.Configuration.RESTHEART_VERSION;
+import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.resource;
 
 /**
- *
  * @author Andrea Di Cesare
  */
 public class Bootstrapper {
@@ -222,12 +204,12 @@ public class Bootstrapper {
         }
 
         tmpExtractedFiles.keySet().forEach(k -> {
-            try {
-                ResourcesExtractor.deleteTempDir(k, tmpExtractedFiles.get(k));
-            } catch (URISyntaxException | IOException ex) {
-                logger.error("error cleaning up temporary directory {}", tmpExtractedFiles.get(k).toString(), ex);
-            }
-        }
+                    try {
+                        ResourcesExtractor.deleteTempDir(k, tmpExtractedFiles.get(k));
+                    } catch (URISyntaxException | IOException ex) {
+                        logger.error("error cleaning up temporary directory {}", tmpExtractedFiles.get(k).toString(), ex);
+                    }
+                }
         );
 
         logger.info("RESTHeart stopped");
@@ -360,40 +342,49 @@ public class Bootstrapper {
     private static GracefulShutdownHandler getHandlersPipe(IdentityManager identityManager, AccessManager accessManager) {
         PipedHttpHandler coreHanlderChain
                 = new DbPropsInjectorHandler(
-                        new CollectionPropsInjectorHandler(
-                                new BodyInjectorHandler(
-                                        new MetadataEnforcerHandler(
-                                                new RequestDispacherHandler(
-                                                        new GetRootHandler(),
-                                                        new GetDBHandler(),
-                                                        new PutDBHandler(),
-                                                        new DeleteDBHandler(),
-                                                        new PatchDBHandler(),
-                                                        new GetCollectionHandler(),
-                                                        new PostCollectionHandler(),
-                                                        new PutCollectionHandler(),
-                                                        new DeleteCollectionHandler(),
-                                                        new PatchCollectionHandler(),
-                                                        new GetDocumentHandler(),
-                                                        new PutDocumentHandler(),
-                                                        new DeleteDocumentHandler(),
-                                                        new PatchDocumentHandler(),
-                                                        new GetIndexesHandler(),
-                                                        new PutIndexHandler(),
-                                                        new DeleteIndexHandler()
-                                                )
+                new CollectionPropsInjectorHandler(
+                        new BodyInjectorHandler(
+                                new MetadataEnforcerHandler(
+                                        new RequestDispacherHandler(
+                                                new GetRootHandler(),
+                                                new GetDBHandler(),
+                                                new PutDBHandler(),
+                                                new DeleteDBHandler(),
+                                                new PatchDBHandler(),
+                                                new GetCollectionHandler(),
+                                                new PostCollectionHandler(),
+                                                new PutCollectionHandler(),
+                                                new DeleteCollectionHandler(),
+                                                new PatchCollectionHandler(),
+                                                new GetDocumentHandler(),
+                                                new PutDocumentHandler(),
+                                                new DeleteDocumentHandler(),
+                                                new PatchDocumentHandler(),
+                                                new GetIndexesHandler(),
+                                                new PutIndexHandler(),
+                                                new DeleteIndexHandler()
                                         )
                                 )
                         )
-                );
+                )
+        );
 
         PathHandler paths = path();
+
+        Config config = pacConfig(identityManager);
+        paths.addExactPath("/callback", CallbackHandler.build(config));
+        paths.addExactPath("/logout", LogoutHandler.build(config));
 
         conf.getMongoMounts().stream().forEach(m -> {
             String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
             String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
 
-            paths.addPrefixPath(url, new CORSHandler(new RequestContextInjectorHandler(url, db, new OptionsHandler(new SecurityHandler(coreHanlderChain, identityManager, accessManager)))));
+            SessionHandlerImpl handlerChain = new SessionHandlerImpl(new CORSHandler(new RequestContextInjectorHandler(url, db, new OptionsHandler(coreHanlderChain))), config.getSessionManager(), config.getSessioncookieconfig());
+
+
+            HttpHandler google2Client = HandlerHelper.requireAuthentication(new AccessManagerHandler(accessManager, handlerChain), config, "Google2Client", false);
+
+            paths.addPrefixPath(url,  google2Client);
 
             logger.info("url {} bound to mongodb resource {}", url, db);
         });
@@ -408,7 +399,7 @@ public class Bootstrapper {
                                 new BlockingHandler(
                                         new GzipEncodingHandler(
                                                 new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(paths)
+                                                        new HttpContinueAcceptingHandler(HandlerHelper.addSession(paths, config))
                                                 ), conf.isForceGzipEncoding()
                                         )
                                 ), // allowed methods
@@ -484,7 +475,9 @@ public class Bootstrapper {
                     ResourceHandler handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(welcomeFile).setDirectoryListingEnabled(false);
 
                     if (secured) {
-                        paths.addPrefixPath(where, new SecurityHandler(new PipedWrappingHandler(null, handler), identityManager, accessManager));
+//                        paths.addPrefixPath(where, new SecurityHandler(new PipedWrappingHandler(null, handler), identityManager, accessManager));
+//                        paths.addPrefixPath(where, HandlerHelper.requireAuthentication(handler, pacConfig(), "Google2Client", false));
+                        paths.addPrefixPath(where, new AccessManagerHandler(accessManager, new PipedWrappingHandler(null, HandlerHelper.requireAuthentication(handler, pacConfig(identityManager), "Google2Client", false))));
                     } else {
                         paths.addPrefixPath(where, handler);
                     }
@@ -498,49 +491,69 @@ public class Bootstrapper {
         }
     }
 
+    private static Config pacConfig(IdentityManager identityManager) {
+        Config config = new Config();
+        config.setClients(buildClients(identityManager));
+        return config;
+    }
+
+
+    public static Clients buildClients(IdentityManager identityManager) {
+
+        Map<String, Object> pac4j = conf.getPac4j();
+
+        String key = ((Map) pac4j.get("google")).get("key").toString();
+        String secret = ((Map) pac4j.get("google")).get("secret").toString();
+        String callbackUrl = ((Map) pac4j.get("google")).get("callback").toString();
+
+        final Google2Client google2Client = new Google2Client(key, secret, new RolesManager(identityManager));
+
+        return new Clients(callbackUrl, google2Client);
+    }
+
     private static void pipeApplicationLogicHandlers(Configuration conf, PathHandler paths, IdentityManager identityManager, AccessManager accessManager) {
         if (conf.getApplicationLogicMounts() != null) {
             conf.getApplicationLogicMounts().stream().forEach(al -> {
-                try {
-                    String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT_KEY);
-                    String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY);
-                    boolean alSecured = (Boolean) al.get(Configuration.APPLICATION_LOGIC_MOUNT_SECURED_KEY);
-                    Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS_KEY);
+                        try {
+                            String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT_KEY);
+                            String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY);
+                            boolean alSecured = (Boolean) al.get(Configuration.APPLICATION_LOGIC_MOUNT_SECURED_KEY);
+                            Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS_KEY);
 
-                    if (alWhere == null || !alWhere.startsWith("/")) {
-                        logger.error("cannot pipe application logic handler {}. parameter 'where' must start with /", alWhere);
-                        return;
-                    }
+                            if (alWhere == null || !alWhere.startsWith("/")) {
+                                logger.error("cannot pipe application logic handler {}. parameter 'where' must start with /", alWhere);
+                                return;
+                            }
 
-                    if (alArgs != null && !(alArgs instanceof Map)) {
-                        logger.error("cannot pipe application logic handler {}. args are not defined as a map. it is a ", alWhere, alWhere.getClass());
-                        return;
+                            if (alArgs != null && !(alArgs instanceof Map)) {
+                                logger.error("cannot pipe application logic handler {}. args are not defined as a map. it is a ", alWhere, alWhere.getClass());
+                                return;
 
-                    }
+                            }
 
-                    Object o = Class.forName(alClazz).getConstructor(PipedHttpHandler.class, Map.class
-                    ).newInstance(null, (Map) alArgs);
+                            Object o = Class.forName(alClazz).getConstructor(PipedHttpHandler.class, Map.class
+                            ).newInstance(null, (Map) alArgs);
 
-                    if (o instanceof ApplicationLogicHandler) {
-                        ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
+                            if (o instanceof ApplicationLogicHandler) {
+                                ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
 
-                        PipedHttpHandler handler = new CORSHandler(new RequestContextInjectorHandler("/_logic", "*", alHandler));
+                                PipedHttpHandler handler = new CORSHandler(new RequestContextInjectorHandler("/_logic", "*", alHandler));
 
-                        if (alSecured) {
-                            paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
-                        } else {
-                            paths.addPrefixPath("/_logic" + alWhere, handler);
+                                if (alSecured) {
+                                    paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
+                                } else {
+                                    paths.addPrefixPath("/_logic" + alWhere, handler);
+                                }
+
+                                logger.info("url {} bound to application logic handler {}. access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
+                            } else {
+                                logger.error("cannot pipe application logic handler {}. class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
+                            }
+
+                        } catch (Throwable t) {
+                            logger.error("cannot pipe application logic handler {}", al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
                         }
-
-                        logger.info("url {} bound to application logic handler {}. access manager: {}", "/_logic" + alWhere, alClazz, alSecured);
-                    } else {
-                        logger.error("cannot pipe application logic handler {}. class {} does not extend ApplicationLogicHandler", alWhere, alClazz);
                     }
-
-                } catch (Throwable t) {
-                    logger.error("cannot pipe application logic handler {}", al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
-                }
-            }
             );
         }
     }

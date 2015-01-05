@@ -8,8 +8,8 @@
 
 ---
 users:
-    - userid: a
-      password: a
+    - userid: michal.suchecki@gmail.com
+      password: secret
       roles: [admins]
     
     - userid: user

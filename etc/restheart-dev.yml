@@ -49,15 +49,15 @@ mongo-servers:
       port: 27017
       
 # Provide mongodb users credentials with mongo-credentials.
-mongo-credentials:
-    - auth-db: admin
-      user: admin
-      password: adminadmin
+#mongo-credentials:
+#    - auth-db: admin
+#      user: admin
+#      password: adminadmin
       
 # Use mongo-mounts to bind URls to mongodb resources using the out-of-the-box URL rewrite feature.
 mongo-mounts:
     - what: "*"
-      where: /
+      where: /mongo
       
 #### static web resources
 
@@ -67,11 +67,11 @@ mongo-mounts:
 # if embedded is true, the resources are either included in the restheart.jar or in the classpath
 
 static-resources-mounts:
-    - what: browser
-      where: /browser
-      welcome-file: browser.html
+    - what: ../www
+      where: /
+      welcome-file: index.html
       secured: false
-      embedded: true
+      embedded: false
 
 #### application logic
 
@@ -109,13 +109,19 @@ application-logic-mounts:
 # the provided default implementations of IDM and AM are SimpleFileIdentityManager and SimpleAccessManager.
 # conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
 
-idm:    
+idm:
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ../etc/security.yml
-access-manager:    
+access-manager:
     implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager
     conf-file: ../etc/security.yml
-    
+
+pac4j:
+    google:
+        callback: http://localcloud.myweb.io:8080/callback
+        key: 393941719523-iekic6jl0qoole5lp4h4lbjlpdihm2v8.apps.googleusercontent.com
+        secret: KbpOskboW5IrBfBGyIDFS7g9
+
 #### logging
 
 # enable-log-console: true => log messages to the console (default value: true)
