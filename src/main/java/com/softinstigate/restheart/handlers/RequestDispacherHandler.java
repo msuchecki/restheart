@@ -46,23 +46,23 @@ import com.softinstigate.restheart.utils.ResponseHelper;
  */
 public class RequestDispacherHandler extends PipedHttpHandler {
 
-    private final GetRootHandler rootGet;
-    private final GetDBHandler dbGet;
-    private final PutDBHandler dbPut;
-    private final DeleteDBHandler dbDelete;
-    private final PatchDBHandler dbPatch;
-    private final GetCollectionHandler collectionGet;
-    private final PostCollectionHandler collectionPost;
-    private final PutCollectionHandler collectionPut;
-    private final DeleteCollectionHandler collectionDelete;
-    private final PatchCollectionHandler collectionPatch;
-    private final GetDocumentHandler documentGet;
-    private final PutDocumentHandler documentPut;
-    private final DeleteDocumentHandler documentDelete;
-    private final PatchDocumentHandler documentPatch;
-    private final GetIndexesHandler indexesGet;
-    private final PutIndexHandler indexPut;
-    private final DeleteIndexHandler indexDelete;
+    private final PipedHttpHandler rootGet;
+    private final PipedHttpHandler dbGet;
+    private final PipedHttpHandler dbPut;
+    private final PipedHttpHandler dbDelete;
+    private final PipedHttpHandler dbPatch;
+    private final PipedHttpHandler collectionGet;
+    private final PipedHttpHandler collectionPost;
+    private final PipedHttpHandler collectionPut;
+    private final PipedHttpHandler collectionDelete;
+    private final PipedHttpHandler collectionPatch;
+    private final PipedHttpHandler documentGet;
+    private final PipedHttpHandler documentPut;
+    private final PipedHttpHandler documentDelete;
+    private final PipedHttpHandler documentPatch;
+    private final PipedHttpHandler indexesGet;
+    private final PipedHttpHandler indexPut;
+    private final PipedHttpHandler indexDelete;
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -86,23 +86,23 @@ public class RequestDispacherHandler extends PipedHttpHandler {
      * @param indexPut
      */
     public RequestDispacherHandler(
-            GetRootHandler rootGet,
-            GetDBHandler dbGet,
-            PutDBHandler dbPut,
-            DeleteDBHandler dbDelete,
-            PatchDBHandler dbPatch,
-            GetCollectionHandler collectionGet,
-            PostCollectionHandler collectionPost,
-            PutCollectionHandler collectionPut,
-            DeleteCollectionHandler collectionDelete,
-            PatchCollectionHandler collectionPatch,
-            GetDocumentHandler documentGet,
-            PutDocumentHandler documentPut,
-            DeleteDocumentHandler documentDelete,
-            PatchDocumentHandler documentPatch,
-            GetIndexesHandler indexesGet,
-            PutIndexHandler indexPut,
-            DeleteIndexHandler indexDelete
+            PipedHttpHandler rootGet,
+            PipedHttpHandler dbGet,
+            PipedHttpHandler dbPut,
+            PipedHttpHandler dbDelete,
+            PipedHttpHandler dbPatch,
+            PipedHttpHandler collectionGet,
+            PipedHttpHandler collectionPost,
+            PipedHttpHandler collectionPut,
+            PipedHttpHandler collectionDelete,
+            PipedHttpHandler collectionPatch,
+            PipedHttpHandler documentGet,
+            PipedHttpHandler documentPut,
+            PipedHttpHandler documentDelete,
+            PipedHttpHandler documentPatch,
+            PipedHttpHandler indexesGet,
+            PipedHttpHandler indexPut,
+            PipedHttpHandler indexDelete
     ) {
 
         super(null);

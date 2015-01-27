@@ -21,6 +21,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.util.JSONParseException;
+import com.softinstigate.restheart.CollectionAccessManager;
 import com.softinstigate.restheart.db.CollectionDAO;
 import com.softinstigate.restheart.utils.HttpStatus;
 import com.softinstigate.restheart.handlers.IllegalQueryParamenterException;
@@ -28,7 +29,11 @@ import com.softinstigate.restheart.handlers.PipedHttpHandler;
 import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.utils.ResponseHelper;
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
+
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +44,12 @@ import org.slf4j.LoggerFactory;
 public class GetCollectionHandler extends PipedHttpHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GetCollectionHandler.class);
+    
+    private final CollectionAccessManager collectionAccessManager;
 
-    /**
-     * Creates a new instance of GetCollectionHandler
-     */
-    public GetCollectionHandler() {
+    public GetCollectionHandler(CollectionAccessManager collectionAccessManager) {
         super(null);
+        this.collectionAccessManager = collectionAccessManager;
     }
 
     /**
@@ -64,7 +69,7 @@ public class GetCollectionHandler extends PipedHttpHandler {
         }
 
         // ***** get data
-        ArrayList<DBObject> data = null;
+        List<DBObject> data = null;
 
         try {
             data = CollectionDAO.getCollectionData(coll, context.getPage(), context.getPagesize(), context.getSortBy(), context.getFilter());
@@ -97,8 +102,16 @@ public class GetCollectionHandler extends PipedHttpHandler {
         }
 
         try {
+
+            List<DBObject> filtered = data.stream().filter(new Predicate<DBObject>() {
+                @Override
+                public boolean test(DBObject dbObject) {
+                    return collectionAccessManager.isAllowed(exchange, context, dbObject);
+                }
+            }).collect(Collectors.toList());
+
             exchange.setResponseCode(HttpStatus.SC_OK);
-            CollectionRepresentationFactory.sendHal(exchange, context, data, size);
+            CollectionRepresentationFactory.sendHal(exchange, context, filtered, filtered.size());
             exchange.endExchange();
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);

@@ -340,6 +340,7 @@ public class Bootstrapper {
     }
 
     private static GracefulShutdownHandler getHandlersPipe(IdentityManager identityManager, AccessManager accessManager) {
+        DocumentAccessManager documentAccessManager = new DocumentAccessManager();
         PipedHttpHandler coreHanlderChain
                 = new DbPropsInjectorHandler(
                 new CollectionPropsInjectorHandler(
@@ -351,15 +352,15 @@ public class Bootstrapper {
                                                 new PutDBHandler(),
                                                 new DeleteDBHandler(),
                                                 new PatchDBHandler(),
-                                                new GetCollectionHandler(),
+                                                new GetCollectionHandler(new CollectionAccessManager()),
                                                 new PostCollectionHandler(),
                                                 new PutCollectionHandler(),
                                                 new DeleteCollectionHandler(),
                                                 new PatchCollectionHandler(),
-                                                new GetDocumentHandler(),
-                                                new PutDocumentHandler(),
-                                                new DeleteDocumentHandler(),
-                                                new PatchDocumentHandler(),
+                                                new AccessManagerHandler(documentAccessManager, new GetDocumentHandler()),
+                                                new AccessManagerHandler(documentAccessManager, new PutDocumentHandler()),
+                                                new AccessManagerHandler(documentAccessManager, new DeleteDocumentHandler()),
+                                                new AccessManagerHandler(documentAccessManager, new PatchDocumentHandler()),
                                                 new GetIndexesHandler(),
                                                 new PutIndexHandler(),
                                                 new DeleteIndexHandler()
@@ -477,7 +478,8 @@ public class Bootstrapper {
                     if (secured) {
 //                        paths.addPrefixPath(where, new SecurityHandler(new PipedWrappingHandler(null, handler), identityManager, accessManager));
 //                        paths.addPrefixPath(where, HandlerHelper.requireAuthentication(handler, pacConfig(), "Google2Client", false));
-                        paths.addPrefixPath(where, new AccessManagerHandler(accessManager, new PipedWrappingHandler(null, HandlerHelper.requireAuthentication(handler, pacConfig(identityManager), "Google2Client", false))));
+//                        paths.addPrefixPath(where, new AccessManagerHandler(accessManager, new PipedWrappingHandler(null, HandlerHelper.requireAuthentication(handler, pacConfig(identityManager), "Google2Client", false))));
+                        paths.addPrefixPath(where, HandlerHelper.requireAuthentication(new AccessManagerHandler(accessManager, new PipedWrappingHandler(null, handler)), pacConfig(identityManager), "Google2Client", false));
                     } else {
                         paths.addPrefixPath(where, handler);
                     }

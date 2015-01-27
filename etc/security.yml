@@ -10,22 +10,10 @@
 users:
     - userid: michal.suchecki@gmail.com
       password: secret
-      roles: [admins]
-    
-    - userid: user
-      password: changeit
-      roles: [users]
-          
-    - userid: user2
-      password: changeit
-      roles: [users]
-    
-    - userid: admin
-      password: changeit
-      roles: [users, admins]
-      
+      roles: [admin]
+
 permissions:
-    - role: admins
+    - role: admin
       predicate: path-prefix[path="/"]
       
     - role: $unauthenticated

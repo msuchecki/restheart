@@ -70,7 +70,7 @@ static-resources-mounts:
     - what: ../www
       where: /
       welcome-file: index.html
-      secured: false
+      secured: true
       embedded: false
 
 #### application logic

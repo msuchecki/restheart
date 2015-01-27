@@ -176,8 +176,6 @@ public class CollectionDAO {
         if (filters != null) {
             filters.stream().forEach((String f) -> {
                 BSONObject filterQuery = (BSONObject) JSON.parse(f);
-                replaceObjectIds(filterQuery);
-
                 query.putAll(filterQuery);  // this can throw JSONParseException for invalid filter parameters
             });
         }
@@ -350,25 +348,4 @@ public class CollectionDAO {
         coll.createIndex(new BasicDBObject("_created_on", 1), new BasicDBObject("name", "_created_on_idx"));
     }
 
-    /**
-     * this replaces string that are valid ObjectIds with ObjectIds objects.
-     *
-     * @param source
-     * @return
-     */
-    private static void replaceObjectIds(BSONObject source) {
-        if (source == null) {
-            return;
-        }
-
-        source.keySet().stream().forEach((key) -> {
-            Object o = source.get(key);
-
-            if (o instanceof BSONObject) {
-                replaceObjectIds((BSONObject) o);
-            } else if (ObjectId.isValid(o.toString())) {
-                source.put(key, new ObjectId(o.toString()));
-            }
-        });
-    }
 }
