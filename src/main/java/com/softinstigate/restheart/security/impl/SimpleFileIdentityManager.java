@@ -21,83 +21,32 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Arrays;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
+
+import java.util.*;
 
 /**
  *
  * @author Andrea Di Cesare
  */
-public class SimpleFileIdentityManager implements IdentityManager {
+public class SimpleFileIdentityManager extends FileConfigurable implements IdentityManager {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleFileIdentityManager.class);
 
-    private final Map<String, SimpleAccount> accounts;
+    private final Map<String, SimpleAccount> accounts=new HashMap<>();
 
     /**
      *
      * @param arguments
      */
     public SimpleFileIdentityManager(Map<String, Object> arguments) {
-        if (arguments == null) {
-            logger.error("missing required argument conf-file");
-            throw new IllegalArgumentException("\"missing required arguments conf-file");
-        }
-
-        Object _confFilePath = arguments.getOrDefault("conf-file", "security.yml");
-
-        if (_confFilePath == null || !(_confFilePath instanceof String)) {
-            logger.error("missing required argument conf-file");
-            throw new IllegalArgumentException("\"missing required arguments conf-file");
-        }
-
-        String confFilePath = (String) _confFilePath;
-
-        if (!confFilePath.startsWith("/")) {
-            // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
-            URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
-            File locationFile = new File(location.getPath());
-            confFilePath = locationFile.getParent() + File.separator + confFilePath;
-        }
-
-        this.accounts = new HashMap<>();
-
-        FileInputStream fis = null;
-
-        try {
-            fis = new FileInputStream(new File(confFilePath));
-            init((Map<String, Object>) new Yaml().load(fis));
-        } catch (FileNotFoundException fnef) {
-            logger.error("configuration file not found.", fnef);
-            throw new IllegalArgumentException("configuration file not found.", fnef);
-        } catch (Throwable t) {
-            logger.error("wrong configuration file format.", t);
-            throw new IllegalArgumentException("wrong configuration file format.", t);
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ex) {
-                    logger.warn("error closing the configuration file {}", confFilePath);
-                }
-            }
-        }
+        loadConfig(arguments);
     }
 
-    private void init(Map<String, Object> conf) {
+
+
+    protected void init(Map<String, Object> conf) {
         Object _users = conf.get("users");
 
         if (_users == null || !(_users instanceof List)) {

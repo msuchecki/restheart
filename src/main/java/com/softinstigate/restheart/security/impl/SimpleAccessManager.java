@@ -42,62 +42,21 @@ import static com.google.common.collect.Sets.newHashSet;
 /**
  * @author Andrea Di Cesare
  */
-public class SimpleAccessManager implements AccessManager {
+public class SimpleAccessManager extends FileConfigurable implements AccessManager {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleAccessManager.class);
 
-    private HashMap<String, Set<Predicate>> acl;
+    private HashMap<String, Set<Predicate>> acl=new HashMap<>();
 
     /**
      * @param arguments
      */
     public SimpleAccessManager(Map<String, Object> arguments) {
-        if (arguments == null) {
-            logger.error("missing required argument conf-file");
-            throw new IllegalArgumentException("\"missing required arguments conf-file");
-        }
-
-        Object _confFilePath = arguments.getOrDefault("conf-file", "security.yml");
-
-        if (_confFilePath == null || !(_confFilePath instanceof String)) {
-            logger.error("missing required argument conf-file");
-            throw new IllegalArgumentException("\"missing required arguments conf-file");
-        }
-
-        String confFilePath = (String) _confFilePath;
-
-        if (!confFilePath.startsWith("/")) {
-            // this is to allow specifying the configuration file path relative to the jar (also working when running from classes)
-            URL location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
-            File locationFile = new File(location.getPath());
-            confFilePath = locationFile.getParent() + File.separator + confFilePath;
-        }
-
-        this.acl = new HashMap<>();
-
-        FileInputStream fis = null;
-
-        try {
-            fis = new FileInputStream(new File(confFilePath));
-            init((Map<String, Object>) new Yaml().load(fis));
-        } catch (FileNotFoundException fnef) {
-            logger.error("configuration file not found.", fnef);
-            throw new IllegalArgumentException("configuration file not found.", fnef);
-        } catch (Throwable t) {
-            logger.error("wrong configuration file format.", t);
-            throw new IllegalArgumentException("wrong configuration file format.", t);
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ex) {
-                    logger.warn("error closing the configuration file {}", confFilePath);
-                }
-            }
-        }
+        loadConfig(arguments);
     }
 
-    private void init(Map<String, Object> conf) {
+    @Override
+    protected void init(Map<String, Object> conf) {
         Object _users = conf.get("permissions");
 
         if (_users == null || !(_users instanceof List)) {
