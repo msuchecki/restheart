@@ -110,7 +110,7 @@ application-logic-mounts:
 # conf-file paths are either absolute (starting with /) or relative to the restheart.jar directory
 
 idm:
-    implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
+    implementation-class: com.softinstigate.restheart.security.impl.SimpleCollectionIdentityManager
     conf-file: ../etc/security.yml
 access-manager:
     implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager

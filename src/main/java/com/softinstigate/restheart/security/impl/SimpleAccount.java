@@ -47,7 +47,7 @@ public class SimpleAccount implements Account {
             throw new IllegalArgumentException("argument password cannot be null");
         }
 
-        if (roles == null || roles.isEmpty()) {
+        if (roles == null) {
             throw new IllegalArgumentException("argument roles cannot be null nor empty");
         }
 

@@ -10,7 +10,6 @@ import io.undertow.security.idm.IdentityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ import java.util.Map;
 public class SimpleCollectionIdentityManager extends FileConfigurable implements IdentityManager {
 
 
-    public static final Logger logger= LoggerFactory.getLogger(SimpleCollectionIdentityManager.class);
+    public static final Logger logger = LoggerFactory.getLogger(SimpleCollectionIdentityManager.class);
 
     public SimpleCollectionIdentityManager(Map<String, Object> arguments) {
         loadConfig(arguments);
@@ -45,9 +44,7 @@ public class SimpleCollectionIdentityManager extends FileConfigurable implements
         if (accData != null) {
 
             List<String> rolesList = (List<String>) accData.get(rolesProp);
-            if (rolesList != null && rolesList.size() > 0) {
-                return new SimpleAccount(s, "secret".toCharArray(), new HashSet(rolesList));
-            }
+            return new SimpleAccount(s, "secret".toCharArray(), rolesList == null ? new HashSet<>() : new HashSet(rolesList));
 
         }
         return null;
@@ -62,15 +59,15 @@ public class SimpleCollectionIdentityManager extends FileConfigurable implements
     protected void init(Map<String, Object> conf) {
         Object _colCfg = conf.get("collectionusers");
 
-        if(_colCfg==null ||! (_colCfg instanceof List)|| ((List)_colCfg).size()!=1) {
+        if (_colCfg == null || !(_colCfg instanceof Map)) {
             logger.error("wrong configuration file format.");
             throw new IllegalArgumentException("wrong configuration file format. missing mandatory users section");
         }
 
-        Map<String, String> colCfg = ((List<Map<String, String>>)_colCfg).get(0);
-        dbName=colCfg.getOrDefault("dbname", "test");
-        usersCollection=colCfg.getOrDefault("collection", "acl");
-        userIdProp=colCfg.getOrDefault("useridprop", "user_id");
-        rolesProp=colCfg.getOrDefault("rolesprop","roles");
+        Map<String, String> colCfg = (Map<String, String>) _colCfg;
+        dbName = colCfg.getOrDefault("dbname", "test");
+        usersCollection = colCfg.getOrDefault("collection", "acl");
+        userIdProp = colCfg.getOrDefault("useridprop", "user_id");
+        rolesProp = colCfg.getOrDefault("rolesprop", "roles");
     }
 }

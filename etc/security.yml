@@ -7,15 +7,23 @@
 
 
 ---
-users:
-    - userid: michal.suchecki@gmail.com
-      password: secret
-      roles: [admin]
+#users:
+#    - userid: michal.suchecki@gmail.com
+#      password: secret
+#      roles: [admin]
+
+collectionusers:
+  dbname: naszadm
+  collection: accounts
+  useridprop: email
 
 permissions:
-    - role: admin
+    - role: sysadmin
       predicate: path-prefix[path="/"]
-      
+
+    - role: administrator
+      predicate: path-prefix[path="/"]
+
     - role: $unauthenticated
       predicate: path-prefix[path="/publicdb/"] and method[value="GET"]
       

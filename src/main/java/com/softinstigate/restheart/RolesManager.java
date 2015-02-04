@@ -3,9 +3,6 @@ package com.softinstigate.restheart;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
-import io.undertow.server.HttpServerExchange;
-import org.pac4j.undertow.ProfileWrapper;
-import org.pac4j.undertow.utils.StorageHelper;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -340,7 +340,6 @@ public class Bootstrapper {
     }
 
     private static GracefulShutdownHandler getHandlersPipe(IdentityManager identityManager, AccessManager accessManager) {
-        DocumentAccessManager documentAccessManager = new DocumentAccessManager();
         PipedHttpHandler coreHanlderChain
                 = new DbPropsInjectorHandler(
                 new CollectionPropsInjectorHandler(
@@ -352,15 +351,15 @@ public class Bootstrapper {
                                                 new PutDBHandler(),
                                                 new DeleteDBHandler(),
                                                 new PatchDBHandler(),
-                                                new GetCollectionHandler(new CollectionAccessManager()),
+                                                new GetCollectionHandler(),
                                                 new PostCollectionHandler(),
                                                 new PutCollectionHandler(),
                                                 new DeleteCollectionHandler(),
                                                 new PatchCollectionHandler(),
-                                                new AccessManagerHandler(documentAccessManager, new GetDocumentHandler()),
-                                                new AccessManagerHandler(documentAccessManager, new PutDocumentHandler()),
-                                                new AccessManagerHandler(documentAccessManager, new DeleteDocumentHandler()),
-                                                new AccessManagerHandler(documentAccessManager, new PatchDocumentHandler()),
+                                                new GetDocumentHandler(),
+                                                new PutDocumentHandler(),
+                                                new DeleteDocumentHandler(),
+                                                new PatchDocumentHandler(),
                                                 new GetIndexesHandler(),
                                                 new PutIndexHandler(),
                                                 new DeleteIndexHandler()

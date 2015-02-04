@@ -8,6 +8,6 @@ package com.softinstigate.restheart;
  */
 public interface Roles {
 
-    String ADMIN_ROLE = "admin";
+    String SYS_ADMIN_ROLE = "sysadmin";
 
 }
