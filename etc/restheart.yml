@@ -113,7 +113,7 @@ idm:
     implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
     conf-file: ./etc/security.yml
 access-manager:    
-    implementation-class: com.softinstigate.restheart.security.impl.SimpleAccessManager
+    implementation-class: com.softinstigate.restheart.security.impl.DocumentAccessManager
     conf-file: ./etc/security.yml
     
 #### logging
