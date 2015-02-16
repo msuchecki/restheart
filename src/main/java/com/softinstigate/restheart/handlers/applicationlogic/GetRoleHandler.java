@@ -20,25 +20,29 @@ package com.softinstigate.restheart.handlers.applicationlogic;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.softinstigate.restheart.hal.Representation;
-import com.softinstigate.restheart.handlers.*;
+import com.softinstigate.restheart.handlers.PipedHttpHandler;
+import com.softinstigate.restheart.handlers.RequestContext;
 import com.softinstigate.restheart.handlers.RequestContext.METHOD;
-import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
 import com.softinstigate.restheart.utils.HttpStatus;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import static io.undertow.util.Headers.BASIC;
-import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 import io.undertow.util.HttpString;
+import org.pac4j.undertow.ProfileWrapper;
+import org.pac4j.undertow.utils.StorageHelper;
+
+import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import javax.xml.bind.DatatypeConverter;
+
+import static com.softinstigate.restheart.security.RestheartIdentityManager.RESTHEART_REALM;
+import static io.undertow.util.Headers.BASIC;
+import static io.undertow.util.Headers.WWW_AUTHENTICATE;
 
 /**
- *
  * @author Andrea Di Cesare
  */
 public class GetRoleHandler extends ApplicationLogicHandler {
@@ -106,6 +110,28 @@ public class GetRoleHandler extends ApplicationLogicHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+
+        ProfileWrapper profile = StorageHelper.getProfile(exchange);
+
+        if (profile != null) {
+            BasicDBObject root = new BasicDBObject();
+
+            root.append("_id", profile.getProfile().getId());
+            root.append("email", profile.getProfile().getEmail());
+            root.append("name", profile.getProfile().getDisplayName());
+            root.append("roles", profile.getProfile().getRoles());
+            root.append("avatar", profile.getProfile().getPictureUrl());
+
+            Representation rep = new Representation(url);
+            rep.addProperties(root);
+
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
+            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.getResponseSender().send(rep.toString());
+            exchange.endExchange();
+            return;
+        }
+
         if (context.getMethod() == METHOD.OPTIONS) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
@@ -113,6 +139,7 @@ public class GetRoleHandler extends ApplicationLogicHandler {
             exchange.endExchange();
         } else if (context.getMethod() == METHOD.GET) {
             String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+
 
             if (authHeader != null && authHeader.startsWith("Basic ")) {
                 authHeader = authHeader.replaceAll("^Basic ", "");

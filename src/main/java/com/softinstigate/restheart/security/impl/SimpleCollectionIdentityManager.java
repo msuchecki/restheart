@@ -44,9 +44,11 @@ public class SimpleCollectionIdentityManager extends FileConfigurable implements
         if (accData != null) {
 
             List<String> rolesList = (List<String>) accData.get(rolesProp);
+            logger.info("User {} logged in  with roles {}", s, rolesList );
             return new SimpleAccount(s, "secret".toCharArray(), rolesList == null ? new HashSet<>() : new HashSet(rolesList));
 
         }
+        logger.info("User {} not logged in", s);
         return null;
     }
 

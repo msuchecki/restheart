@@ -92,12 +92,12 @@ application-logic-mounts:
           msg: "ciao from the restheart team"
     - what: com.softinstigate.restheart.handlers.applicationlogic.GetRoleHandler
       where: /roles/mine
-      secured: false
+      secured: true
       args:
           url: /_logic/roles/mine
           send-challenge: false
-          idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleFileIdentityManager
-          idm-conf-file: ../etc/security-integrationtest.yml
+          idm-implementation-class: com.softinstigate.restheart.security.impl.SimpleCollectionIdentityManager
+          idm-conf-file: ../etc/security.yml
 
 ### security 
 

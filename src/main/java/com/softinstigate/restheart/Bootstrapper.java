@@ -541,7 +541,9 @@ public class Bootstrapper {
                                 PipedHttpHandler handler = new CORSHandler(new RequestContextInjectorHandler("/_logic", "*", alHandler));
 
                                 if (alSecured) {
-                                    paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
+//                                    paths.addPrefixPath("/_logic" + alWhere, new SecurityHandler(handler, identityManager, accessManager));
+                                    paths.addPrefixPath("/_logic" + alWhere, HandlerHelper.requireAuthentication(new AccessManagerHandler(accessManager, new PipedWrappingHandler(null, handler)), pacConfig(identityManager), "Google2Client", false));
+
                                 } else {
                                     paths.addPrefixPath("/_logic" + alWhere, handler);
                                 }
