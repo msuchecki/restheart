@@ -15,11 +15,14 @@ import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.server.handlers.form.MultiPartParserDefinition;
 import io.undertow.util.FileUtils;
 import io.undertow.util.Headers;
+import org.bson.types.ObjectId;
 import org.pac4j.undertow.ProfileWrapper;
 import org.pac4j.undertow.utils.StorageHelper;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.time.YearMonth;
 import java.util.Map;
 
@@ -47,42 +50,67 @@ public class UploadHandler extends ApplicationLogicHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
 
-        ProfileWrapper profile = StorageHelper.getProfile(exchange);
+        if (context.getMethod() == RequestContext.METHOD.GET) {
+            DBCollection col = CollectionDAO.getCollection(dbname, collection);
 
-        FormDataParser formDataParser = new MultiPartParserDefinition().create(exchange);
+            String fileId = exchange.getRequestPath().split("/")[3];
+            DBObject q = BasicDBObjectBuilder.start().add("_id", new ObjectId(fileId)).get();
+            DBObject upload = col.findOne(q);
 
-        FormData strings = formDataParser.parseBlocking();
-        FormData.FormValue file = strings.getFirst("File");
+            if (upload != null) {
+
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, upload.get("contentType").toString());
+                exchange.setResponseCode(HttpStatus.SC_OK);
+
+                RandomAccessFile aFile = new RandomAccessFile(upload.get("path").toString() + upload.get("_id").toString(), "r");
+                FileChannel inChannel = aFile.getChannel();
+                MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+                buffer.load();
 
 
-        DBCollection col = CollectionDAO.getCollection(dbname, collection);
+                exchange.getResponseSender().send(buffer);
+                exchange.endExchange();
 
-        BasicDBObject uploader = new BasicDBObject();
-        uploader.append("_id", profile.getProfile().getId());
-        uploader.append("name", profile.getProfile().getDisplayName());
+//                buffer.clear(); // do something with the data and clear/compact it.
 
-        String filePath = path + "/" + YearMonth.now().toString() + "/";
+            }
 
-        new File(path).mkdirs();
+        } else if (context.getMethod() == RequestContext.METHOD.POST) {
+            ProfileWrapper profile = StorageHelper.getProfile(exchange);
 
-        DBObject q = BasicDBObjectBuilder.start()
-                .add("uploader", uploader)
-                .add("originalName", file.getFileName())
-                .add("path", filePath)
-                .add("contentType", file.getHeaders().getFirst("Content-Type"))
-                .add("fileSize", file.getFile().length())
-                .get();
+            FormDataParser formDataParser = new MultiPartParserDefinition().create(exchange);
 
-        col.save(q);
+            FormData strings = formDataParser.parseBlocking();
+            FormData.FormValue file = strings.getFirst("File");
 
-        String fileId = q.get("_id").toString();
+            DBCollection col = CollectionDAO.getCollection(dbname, collection);
 
-        FileUtils.copyFile(file.getFile(), new File(filePath + fileId));
+            BasicDBObject uploader = new BasicDBObject();
+            uploader.append("_id", profile.getProfile().getId());
+            uploader.append("name", profile.getProfile().getDisplayName());
 
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
-        exchange.setResponseCode(HttpStatus.SC_OK);
-        exchange.getResponseSender().send(q.toString());
-        exchange.endExchange();
+            String filePath = path + "/" + YearMonth.now().toString() + "/";
 
+            new File(path).mkdirs();
+
+            DBObject q = BasicDBObjectBuilder.start()
+                    .add("uploader", uploader)
+                    .add("originalName", file.getFileName())
+                    .add("path", filePath)
+                    .add("contentType", file.getHeaders().getFirst("Content-Type"))
+                    .add("fileSize", file.getFile().length())
+                    .get();
+
+            col.save(q);
+
+            String fileId = q.get("_id").toString();
+
+            FileUtils.copyFile(file.getFile(), new File(filePath + fileId));
+
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
+            exchange.setResponseCode(HttpStatus.SC_OK);
+            exchange.getResponseSender().send(q.toString());
+            exchange.endExchange();
+        }
     }
 }
