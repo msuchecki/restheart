@@ -90,6 +90,13 @@ application-logic-mounts:
       secured: false
       args:
           msg: "ciao from the restheart team"
+    - what: com.softinstigate.restheart.handlers.applicationlogic.UploadHandler
+      where: /upload
+      secured: true
+      args:
+          database: naszadm
+          collection: upload
+          path: /home/msuchecki/naszadm/upload
     - what: com.softinstigate.restheart.handlers.applicationlogic.GetRoleHandler
       where: /roles/mine
       secured: true
