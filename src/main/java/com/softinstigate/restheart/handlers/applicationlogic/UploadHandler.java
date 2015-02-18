@@ -38,14 +38,14 @@ public class UploadHandler extends ApplicationLogicHandler {
 
     private String dbname = "naszadm";
     private String collection = "upload";
-    private String path = "./";
+    private String repositoty = "./";
 
     public UploadHandler(PipedHttpHandler next, Map<String, Object> args) {
         super(next, args);
 
         dbname = args.get("database").toString();
         collection = args.get("collection").toString();
-        path = args.get("path").toString();
+        repositoty = args.get("path").toString();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class UploadHandler extends ApplicationLogicHandler {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, upload.get("contentType").toString());
                 exchange.setResponseCode(HttpStatus.SC_OK);
 
-                RandomAccessFile aFile = new RandomAccessFile(upload.get("path").toString() + upload.get("_id").toString(), "r");
+                RandomAccessFile aFile = new RandomAccessFile(repositoty + "/" + upload.get("path").toString() + upload.get("_id").toString(), "r");
                 FileChannel inChannel = aFile.getChannel();
                 MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
                 buffer.load();
@@ -75,8 +75,7 @@ public class UploadHandler extends ApplicationLogicHandler {
 //                buffer.clear(); // do something with the data and clear/compact it.
 
             }
-        }
-        else if(context.getMethod() == RequestContext.METHOD.DELETE) {
+        } else if (context.getMethod() == RequestContext.METHOD.DELETE) {
             DBCollection col = CollectionDAO.getCollection(dbname, collection);
 
             String fileId = exchange.getRequestPath().split("/")[3];
@@ -85,7 +84,7 @@ public class UploadHandler extends ApplicationLogicHandler {
 
             if (upload != null) {
                 String filePath = upload.get("path").toString();
-                new File( filePath + fileId ).delete();
+                new File(repositoty + "/" + filePath + fileId).delete();
                 col.remove(upload);
             }
 
@@ -103,9 +102,9 @@ public class UploadHandler extends ApplicationLogicHandler {
             uploader.append("_id", profile.getProfile().getId());
             uploader.append("name", profile.getProfile().getDisplayName());
 
-            String filePath = path + "/" + YearMonth.now().toString() + "/";
+            String filePath = YearMonth.now().toString() + "/";
 
-            new File(path).mkdirs();
+            new File(repositoty).mkdirs();
 
             DBObject q = BasicDBObjectBuilder.start()
                     .add("uploader", uploader)
@@ -120,7 +119,7 @@ public class UploadHandler extends ApplicationLogicHandler {
 
             String fileId = q.get("_id").toString();
 
-            FileUtils.copyFile(file.getFile(), new File(filePath + fileId));
+            FileUtils.copyFile(file.getFile(), new File(repositoty + "/" + filePath + fileId));
 
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Representation.HAL_JSON_MEDIA_TYPE);
             exchange.setResponseCode(HttpStatus.SC_OK);
