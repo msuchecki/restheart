@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.time.YearMonth;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -74,6 +75,19 @@ public class UploadHandler extends ApplicationLogicHandler {
 //                buffer.clear(); // do something with the data and clear/compact it.
 
             }
+        }
+        else if(context.getMethod() == RequestContext.METHOD.DELETE) {
+            DBCollection col = CollectionDAO.getCollection(dbname, collection);
+
+            String fileId = exchange.getRequestPath().split("/")[3];
+            DBObject q = BasicDBObjectBuilder.start().add("_id", new ObjectId(fileId)).get();
+            DBObject upload = col.findOne(q);
+
+            if (upload != null) {
+                String filePath = upload.get("path").toString();
+                new File( filePath + fileId ).delete();
+                col.remove(upload);
+            }
 
         } else if (context.getMethod() == RequestContext.METHOD.POST) {
             ProfileWrapper profile = StorageHelper.getProfile(exchange);
@@ -99,6 +113,7 @@ public class UploadHandler extends ApplicationLogicHandler {
                     .add("path", filePath)
                     .add("contentType", file.getHeaders().getFirst("Content-Type"))
                     .add("fileSize", file.getFile().length())
+                    .add("_created_on", new Date())
                     .get();
 
             col.save(q);
